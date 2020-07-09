@@ -22,6 +22,7 @@ from torch.utils.data import Dataset
 
 from pycocotools.cocoeval import COCOeval
 from utils import zipreader
+from glob import glob
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,8 @@ class CocoDataset(Dataset):
         if self.data_format == 'zip':
             return os.path.join(images_dir, dataset) + '.zip@' + file_name
         else:
-            return os.path.join(images_dir, dataset, file_name)
+            #return os.path.join(images_dir, dataset, file_name)
+            return os.path.join(images_dir, file_name)
 
     def __getitem__(self, index):
         """
@@ -106,7 +108,18 @@ class CocoDataset(Dataset):
         ann_ids = coco.getAnnIds(imgIds=img_id)
         target = coco.loadAnns(ann_ids)
 
-        file_name = coco.loadImgs(img_id)[0]['file_name']
+        # file_name = coco.loadImgs(img_id)[0]['file_name']
+        # test on custom data -- gait event detection
+
+        test_dir = os.path.join(self.root, 'images/')
+        addrs = glob(os.path.join(test_dir + '*.jpg'))
+
+        fn_list = []
+        for addr in addrs:
+            filename = os.path.basename(addr)
+            fn_list.append(filename)
+
+        file_name = fn_list[index]
 
         if self.data_format == 'zip':
             img = zipreader.imread(

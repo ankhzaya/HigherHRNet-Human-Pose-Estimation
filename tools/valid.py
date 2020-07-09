@@ -185,6 +185,7 @@ def main():
                 final_heatmaps, tags, cfg.TEST.ADJUST, cfg.TEST.REFINE
             )
 
+            #keypoint pos
             final_results = get_final_preds(
                 grouped, center, scale,
                 [final_heatmaps.size(3), final_heatmaps.size(2)]
