@@ -24,6 +24,11 @@ from pycocotools.cocoeval import COCOeval
 from utils import zipreader
 from glob import glob
 
+import sys
+sys.path.append('../../')
+
+from dataset.gait_dict import filename
+
 logger = logging.getLogger(__name__)
 
 
@@ -65,6 +70,7 @@ class CocoDataset(Dataset):
                 for cls in self.classes[1:]
             ]
         )
+        self.ids = sorted(self.ids)
 
     def _get_anno_file_name(self):
         # example: root/annotations/person_keypoints_tran2017.json
@@ -86,14 +92,15 @@ class CocoDataset(Dataset):
                 )
             )
 
-    def _get_image_path(self, file_name):
+    def _get_image_path(self, img_dir, file_name):
         images_dir = os.path.join(self.root, 'images')
         dataset = 'test2017' if 'test' in self.dataset else self.dataset
         if self.data_format == 'zip':
             return os.path.join(images_dir, dataset) + '.zip@' + file_name
         else:
-            #return os.path.join(images_dir, dataset, file_name)
-            return os.path.join(images_dir, file_name)
+            # return os.path.join(images_dir, dataset, file_name)
+            return os.path.join(img_dir, file_name)
+
 
     def __getitem__(self, index):
         """
@@ -111,14 +118,7 @@ class CocoDataset(Dataset):
         # file_name = coco.loadImgs(img_id)[0]['file_name']
         # test on custom data -- gait event detection
 
-        test_dir = os.path.join(self.root, 'images/')
-        addrs = glob(os.path.join(test_dir + '*.jpg'))
-
-        fn_list = []
-        for addr in addrs:
-            filename = os.path.basename(addr)
-            fn_list.append(filename)
-
+        img_dir, fn_list = filename()
         file_name = fn_list[index]
 
         if self.data_format == 'zip':
@@ -128,7 +128,7 @@ class CocoDataset(Dataset):
             )
         else:
             img = cv2.imread(
-                self._get_image_path(file_name),
+                self._get_image_path(img_dir, file_name),
                 cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION
             )
 
@@ -140,7 +140,7 @@ class CocoDataset(Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target
+        return file_name[:-4], img, target
 
     def __len__(self):
         return len(self.ids)

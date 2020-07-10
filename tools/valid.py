@@ -41,6 +41,7 @@ from utils.vis import save_valid_image
 from utils.transforms import resize_align_multi_scale
 from utils.transforms import get_final_preds
 from utils.transforms import get_multi_scale_size
+import json
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -73,14 +74,14 @@ def _print_name_value(logger, name_value, full_arch_name):
         ' '.join(['| {}'.format(name) for name in names]) +
         ' |'
     )
-    logger.info('|---' * (num_values+1) + '|')
+    logger.info('|---' * (num_values + 1) + '|')
 
     if len(full_arch_name) > 15:
         full_arch_name = full_arch_name[:8] + '...'
     logger.info(
         '| ' + full_arch_name + ' ' +
         ' '.join(['| {:.3f}'.format(value) for value in values]) +
-         ' |'
+        ' |'
     )
 
 
@@ -101,7 +102,7 @@ def main():
     torch.backends.cudnn.deterministic = cfg.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = cfg.CUDNN.ENABLED
 
-    model = eval('models.'+cfg.MODEL.NAME+'.get_pose_net')(
+    model = eval('models.' + cfg.MODEL.NAME + '.get_pose_net')(
         cfg, is_train=False
     )
 
@@ -150,7 +151,7 @@ def main():
     all_scores = []
 
     pbar = tqdm(total=len(test_dataset)) if cfg.TEST.LOG_PROGRESS else None
-    for i, (images, annos) in enumerate(data_loader):
+    for i, (file_names, images, annos) in enumerate(data_loader):
         assert 1 == images.size(0), 'Test batch size should be 1'
 
         image = images[0].cpu().numpy()
@@ -185,19 +186,36 @@ def main():
                 final_heatmaps, tags, cfg.TEST.ADJUST, cfg.TEST.REFINE
             )
 
-            #keypoint pos
+            # keypoint pos
             final_results = get_final_preds(
                 grouped, center, scale,
                 [final_heatmaps.size(3), final_heatmaps.size(2)]
             )
 
+            # print('final_results: {}'.format(final_results[0]))
+            kp_pos = []
+            human_kp = {}
+            frame_number = int(file_names[0][4:8])
+
+            for kp in range(len(final_results[0])):
+                kp_pos.append([int(final_results[0][kp][0]), int(final_results[0][kp][1])])
+
+            human_kp.update({'{}'.format(frame_number): '{}'.format(kp_pos)})
+
+            print(human_kp.keys())
+
+            # print('final_results x, y: {}'.format(kp_pos))
+        with open('test.txt', 'w') as outfile:
+            json.dump(human_kp, outfile)
+
         if cfg.TEST.LOG_PROGRESS:
             pbar.update()
 
         if i % cfg.PRINT_FREQ == 0:
-            prefix = '{}_{}'.format(os.path.join(final_output_dir, 'result_valid'), i)
+            # prefix = '{}_{}'.format(os.path.join(final_output_dir, 'result_valid'), i)
             # logger.info('=> write {}'.format(prefix))
-            save_valid_image(image, final_results, '{}.jpg'.format(prefix), dataset=test_dataset.name)
+            save_valid_image(image, final_results, '{}/{}.jpg'.format(final_output_dir, file_names[0]),
+                             dataset=test_dataset.name)
             # save_debug_images(cfg, image_resized, None, None, outputs, prefix)
 
         all_preds.append(final_results)
