@@ -42,6 +42,7 @@ from utils.transforms import resize_align_multi_scale
 from utils.transforms import get_final_preds
 from utils.transforms import get_multi_scale_size
 import json
+from collections import OrderedDict
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -149,9 +150,9 @@ def main():
     parser = HeatmapParser(cfg)
     all_preds = []
     all_scores = []
-
+    human_kp = {}
     pbar = tqdm(total=len(test_dataset)) if cfg.TEST.LOG_PROGRESS else None
-    for i, (file_names, images, annos) in enumerate(data_loader):
+    for i, (out_fn, file_names, images, annos) in enumerate(data_loader):
         assert 1 == images.size(0), 'Test batch size should be 1'
 
         image = images[0].cpu().numpy()
@@ -194,7 +195,6 @@ def main():
 
             # print('final_results: {}'.format(final_results[0]))
             kp_pos = []
-            human_kp = {}
             frame_number = int(file_names[0][4:8])
 
             for kp in range(len(final_results[0])):
@@ -202,11 +202,9 @@ def main():
 
             human_kp.update({'{}'.format(frame_number): '{}'.format(kp_pos)})
 
-            print(human_kp.keys())
+            #print(human_kp.keys())
 
             # print('final_results x, y: {}'.format(kp_pos))
-        with open('test.txt', 'w') as outfile:
-            json.dump(human_kp, outfile)
 
         if cfg.TEST.LOG_PROGRESS:
             pbar.update()
@@ -220,6 +218,12 @@ def main():
 
         all_preds.append(final_results)
         all_scores.append(scores)
+
+    # save results in json file
+    sorted_human_kp = OrderedDict(sorted(human_kp.items(), key=lambda t: t[0]))
+
+    with open('{}.json'.format(out_fn[0]), 'w') as outfile:
+        json.dump(sorted_human_kp, outfile)
 
     if cfg.TEST.LOG_PROGRESS:
         pbar.close()

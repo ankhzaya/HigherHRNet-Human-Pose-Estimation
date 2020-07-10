@@ -71,6 +71,7 @@ class CocoDataset(Dataset):
             ]
         )
         self.ids = sorted(self.ids)
+        self.img_dir, self.fn_list = filename()
 
     def _get_anno_file_name(self):
         # example: root/annotations/person_keypoints_tran2017.json
@@ -118,8 +119,12 @@ class CocoDataset(Dataset):
         # file_name = coco.loadImgs(img_id)[0]['file_name']
         # test on custom data -- gait event detection
 
-        img_dir, fn_list = filename()
-        file_name = fn_list[index]
+        #img_dir, fn_list = filename()
+        file_name = self.fn_list[index]
+        fn_parts = self.img_dir.split('/')
+        sbj, act_name, cmr = fn_parts[-3], fn_parts[-2], fn_parts[-1]
+
+        out_fn = '{}_{}_{}'.format(sbj, cmr, act_name)
 
         if self.data_format == 'zip':
             img = zipreader.imread(
@@ -128,7 +133,7 @@ class CocoDataset(Dataset):
             )
         else:
             img = cv2.imread(
-                self._get_image_path(img_dir, file_name),
+                self._get_image_path(self.img_dir, file_name),
                 cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION
             )
 
@@ -140,11 +145,11 @@ class CocoDataset(Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return file_name[:-4], img, target
+        return out_fn, file_name[:-4], img, target
 
     def __len__(self):
-        return len(self.ids)
-
+        #return len(self.ids)
+        return len(self.fn_list)
     def __repr__(self):
         fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
         fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())

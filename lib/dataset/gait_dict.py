@@ -33,7 +33,7 @@ def filename():
             for act_name in act_names:
                 for act_order in act_orders:
                     images_dir = os.path.join(configs.datasets_dir, sbj, act_name + '{}'.format(act_order), cmr)
-                    #print('images_dir: {}'.format(images_dir))
+                    print('images_dir: {}'.format(images_dir))
 
                     if not os.path.isdir(images_dir):
                         print('No dir: {} !!!'.format(os.path.basename(images_dir)))
@@ -42,6 +42,7 @@ def filename():
 
     #print('len(finame_list): {}'.format(len(filename_list)))
     #print('example of filename: {}'.format(filename_list[4]))
+
 
     return images_dir, filename_list
 
