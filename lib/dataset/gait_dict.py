@@ -23,10 +23,10 @@ def filename():
     configs.working_dir = '/home/ankhzaya/Desktop/extract_images_gait_events/'
     configs.datasets_dir = os.path.join(configs.working_dir, 'images/')
 
-    subjects = ['S19']
+    subjects = ['S26']
     cameras = ['C12']
     act_names = ['WalkingAround']
-    act_orders = ['1']
+    act_orders = ['2']
 
     for sbj in subjects:
         for cmr in cameras:

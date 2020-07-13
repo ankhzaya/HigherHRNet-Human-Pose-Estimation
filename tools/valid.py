@@ -42,7 +42,7 @@ from utils.transforms import resize_align_multi_scale
 from utils.transforms import get_final_preds
 from utils.transforms import get_multi_scale_size
 import json
-from collections import OrderedDict
+import operator
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -198,6 +198,7 @@ def main():
             frame_number = int(file_names[0][4:8])
 
             for kp in range(len(final_results[0])):
+
                 kp_pos.append([int(final_results[0][kp][0]), int(final_results[0][kp][1])])
 
             human_kp.update({'{}'.format(frame_number): '{}'.format(kp_pos)})
@@ -220,10 +221,17 @@ def main():
         all_scores.append(scores)
 
     # save results in json file
-    sorted_human_kp = OrderedDict(sorted(human_kp.items(), key=lambda t: t[0]))
+    sorted_human_kp = sorted(human_kp.items(), key=operator.itemgetter(0))
+    sorted_human_kp = dict(sorted_human_kp)
+    sorted_frame = {}
+
+    for idx in range(1, len(sorted_human_kp) + 1):
+        idx = str(idx)
+        sorted_frame[idx] = sorted_human_kp[idx]
 
     with open('{}.json'.format(out_fn[0]), 'w') as outfile:
-        json.dump(sorted_human_kp, outfile)
+        json.dump(sorted_frame, outfile)
+
 
     if cfg.TEST.LOG_PROGRESS:
         pbar.close()
